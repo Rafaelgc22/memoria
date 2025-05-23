@@ -1,0 +1,528 @@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Juego de Memoria Minion - Niveles y Récords</title>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <style>
+            body {
+                font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+                background-color: #FFDA00; /* Amarillo Minion */
+                color: #000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                min-height: 100vh;
+                margin: 0;
+                padding: 20px;
+                box-sizing: border-box;
+            }
+
+            h1 {
+                color: #3D7DCA; /* Azul Minion */
+                text-shadow: 2px 2px #000;
+                font-size: 2.5em;
+                margin-bottom: 15px;
+                text-align: center;
+            }
+
+            .controls {
+                background-color: rgba(61, 125, 202, 0.8);
+                padding: 10px 15px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                align-items: center;
+                justify-content: center;
+                width: 90%;
+                max-width: 500px;
+                box-sizing: border-box;
+            }
+
+            .controls label {
+                color: #FFDA00;
+                font-weight: bold;
+            }
+
+            .controls select, .controls button {
+                padding: 8px 12px;
+                border-radius: 5px;
+                border: 2px solid #000;
+                font-size: 1em;
+                font-family: inherit;
+                background-color: #FFDA00;
+                color: #3D7DCA;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            
+            .controls button:hover, .controls select:hover {
+                background-color: #ffe033;
+            }
+
+            .info-panel {
+                background-color: #3D7DCA;
+                color: #FFDA00;
+                padding: 10px 15px; /* Ajustado padding */
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                display: flex;
+                flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea */
+                justify-content: space-around;
+                align-items: center; /* Centra verticalmente */
+                width: 90%; /* Ajustado para mejor responsividad */
+                max-width: 450px; /* Ajustado */
+                font-size: 1.1em; /* Ajustado */
+                box-sizing: border-box;
+            }
+
+            #score, #attempts {
+                font-weight: bold;
+                flex-basis: 48%; /* Para que dejen espacio y quepan bien */
+                text-align: center;
+                margin-bottom: 5px; /* Espacio si highScoreDisplay está debajo */
+            }
+            #highScoreDisplay {
+                font-weight: normal;
+                font-size: 0.9em;
+                text-align: center;
+                flex-basis: 100%; /* Ocupa todo el ancho */
+                margin-top: 8px;
+                color: #FFF2A7; /* Un amarillo más claro para el récord */
+            }
+
+
+            .game-board {
+                display: grid;
+                gap: 10px;
+                width: 90%;
+                max-width: 600px;
+                margin-left: auto;
+                margin-right: auto;
+                perspective: 1000px;
+                margin-bottom: 20px;
+            }
+
+            .card {
+                background-color: #3D7DCA;
+                border: 3px solid #000000;
+                border-radius: 10px;
+                cursor: pointer;
+                aspect-ratio: 1 / 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transform-style: preserve-3d;
+                transition: transform 0.6s;
+                position: relative;
+            }
+
+            .card.flipped, .card.matched {
+                transform: rotateY(180deg);
+                background-color: #fff;
+            }
+            
+            .card.matched {
+                cursor: default;
+                opacity: 0.7;
+            }
+
+            .card-face, .card-back {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                backface-visibility: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 7px;
+            }
+
+            .card-face {
+                transform: rotateY(180deg);
+            }
+            
+            .card-face img {
+                max-width: 85%;
+                max-height: 85%;
+                object-fit: contain;
+            }
+            
+            .card-back::before {
+                content: "?";
+                font-size: 3em;
+                color: #FFDA00;
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                h1 { font-size: 2.2em; }
+                .info-panel { width: 90%; font-size: 1em; }
+                .controls select, .controls button {
+                    font-size: 0.9em;
+                    padding: 7px 10px;
+                }
+            }
+
+            @media (max-width: 600px) {
+                h1 { font-size: 2em; }
+                .info-panel { width: 95%; }
+                #score, #attempts { flex-basis: 45%; font-size: 0.95em; }
+                #highScoreDisplay { font-size: 0.85em; }
+                .card-back::before { font-size: 2.5em; }
+                .game-board {
+                    gap: 8px;
+                }
+            }
+            @media (max-width: 480px) {
+                h1 { font-size: 1.8em; }
+                .controls {
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .controls label {
+                    margin-bottom: -5px; 
+                }
+                .controls select, .controls button {
+                    width: 100%; 
+                    box-sizing: border-box;
+                }
+                .info-panel {
+                    font-size: 0.9em;
+                    padding: 8px 15px;
+                }
+                #score, #attempts { flex-basis: 100%; margin-bottom: 5px; } /* Pasan a ocupar toda la línea */
+
+                .game-board {
+                    gap: 5px; 
+                    max-width: 95%; /* Que se ajuste más al ancho */
+                }
+                .card-back::before { font-size: 2em; } 
+            }
+
+            @media (max-width: 360px) {
+                h1 { font-size: 1.6em; }
+                .card-back::before { font-size: 1.8em; }
+                .info-panel { font-size: 0.85em; }
+            }
+
+            /* Estilos personalizados para SweetAlert2 */
+            .swal-title-minion {
+                color: #3D7DCA !important;
+                font-weight: bold !important;
+                text-shadow: 1px 1px #000;
+            }
+            .swal-html-minion {
+                color: #000 !important;
+                font-size: 1.1em !important;
+            }
+            .swal-html-minion strong {
+                color: #2a5a9b;
+            }
+            .swal-html-minion .new-record-highlight { /* Clase para el mensaje de nuevo récord */
+                color: #D62828 !important; /* Un rojo para destacar */
+                font-weight: bold;
+            }
+            .swal-button-minion {
+                background-color: #3D7DCA !important;
+                color: #FFDA00 !important;
+                border: 2px solid #000 !important;
+                font-weight: bold !important;
+                box-shadow: 2px 2px 3px rgba(0,0,0,0.3) !important;
+                transition: background-color 0.2s ease-in-out !important;
+            }
+            .swal-button-minion:hover {
+                background-color: #3068A8 !important;
+            }
+            .swal-button-minion:focus {
+                box-shadow: 0 0 0 3px rgba(61, 125, 202, 0.5) !important;
+            }
+        </style>
+    </head>
+    <body>
+    
+    <audio id="flipSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_89488ab15b.mp3?filename=card-flip-89763.mp3" preload="auto"></audio>
+    <audio id="matchSound" src="https://cdn.pixabay.com/download/audio/2021/09/23/audio_71d7c3ae2f.mp3?filename=success-bells-142172.mp3" preload="auto"></audio>
+    <audio id="noMatchSound" src="https://cdn.pixabay.com/download/audio/2022/10/12/audio_2310b3ea2e.mp3?filename=fail-144746.mp3" preload="auto"></audio>
+    <audio id="winLevelSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_48d8cbb1c7.mp3?filename=kids-cheering-89773.mp3" preload="auto"></audio>
+
+
+        <h1>Juego de Memoria Minion</h1>
+
+        <div class="controls">
+            <label for="level-select">Nivel:</label>
+            <select id="level-select">
+                <!-- Los niveles se cargarán aquí con JS -->
+            </select>
+            <button id="restart-button">Reiniciar Nivel</button>
+        </div>
+
+        <div class="info-panel">
+            <div id="score">Puntuación: 0</div>
+            <div id="attempts">Intentos: 0</div>
+            <div id="highScoreDisplay">Récord Nivel: Cargando...</div>
+        </div>
+
+        <div class="game-board" id="gameBoard">
+            <!-- Las cartas se generarán aquí con JavaScript -->
+        </div>
+
+        <script>
+            const gameBoard = document.getElementById('gameBoard');
+            const scoreDisplay = document.getElementById('score');
+            const attemptsDisplay = document.getElementById('attempts');
+            const restartButton = document.getElementById('restart-button');
+            const levelSelect = document.getElementById('level-select');
+            const highScoreDisplayElement = document.getElementById('highScoreDisplay'); // Elemento del DOM
+
+            // Referencias a los elementos de audio
+            const flipAudio = document.getElementById('flipSound');
+            const matchAudio = document.getElementById('matchSound');
+            const noMatchAudio = document.getElementById('noMatchSound');
+            const winLevelAudio = document.getElementById('winLevelSound');
+
+            const HIGH_SCORES_KEY = 'minionMemoryHighScores';
+
+            function playSound(audioElement) {
+                if (audioElement && audioElement.readyState >= 2) { // Check if audio is ready
+                    audioElement.currentTime = 0;
+                    audioElement.play().catch(error => console.warn("Error al reproducir audio:", error, audioElement.src));
+                } else if (audioElement) {
+                    console.warn("Audio no listo para reproducir:", audioElement.src, "ReadyState:", audioElement.readyState);
+                }
+            }
+
+            function getHighScores() {
+                const scores = localStorage.getItem(HIGH_SCORES_KEY);
+                return scores ? JSON.parse(scores) : {};
+            }
+
+            function saveHighScore(levelIndex, attemptsCount) {
+                const highScores = getHighScores();
+                const levelKey = `level_${levelIndex}_attempts`;
+                if (!highScores[levelKey] || attemptsCount < highScores[levelKey]) {
+                    highScores[levelKey] = attemptsCount;
+                    localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(highScores));
+                    return true;
+                }
+                return false;
+            }
+
+            function displayHighScore(levelIndex) {
+                if (!highScoreDisplayElement) return; // Salir si el elemento no existe
+                const highScores = getHighScores();
+                const levelKey = `level_${levelIndex}_attempts`;
+                if (highScores[levelKey]) {
+                    highScoreDisplayElement.textContent = `Récord Nivel: ${highScores[levelKey]} intentos`;
+                } else {
+                    highScoreDisplayElement.textContent = 'Récord Nivel: Aún no hay récord';
+                }
+            }
+
+            const allMinionImageSources = [
+            'https://pngimg.com/uploads/minions/minions_PNG29.png',
+            'https://pngimg.com/uploads/minions/minions_PNG36.png',
+            'https://pngimg.com/uploads/minions/minions_PNG60.png',
+            'https://pngimg.com/uploads/minions/minions_PNG12.png',
+            'https://pngimg.com/uploads/minions/minions_PNG67.png',
+            'https://pngimg.com/uploads/minions/minions_PNG3.png',
+            'https://pngimg.com/uploads/minions/minions_PNG45.png',
+            'https://pngimg.com/uploads/minions/minions_PNG58.png',
+            'https://pngimg.com/uploads/minions/minions_PNG69.png',
+            'https://pngimg.com/uploads/minions/minions_PNG66.png'
+            ];
+
+            const levels = [
+                { name: "Fácil (4 Pares)", pairs: 4, columns: 4, rows: 2 },
+                { name: "Medio (6 Pares)", pairs: 6, columns: 4, rows: 3 },
+                { name: "Difícil (8 Pares)", pairs: 8, columns: 4, rows: 4 },
+                { name: "Experto (10 Pares)", pairs: 10, columns: 5, rows: 4 }
+            ];
+            
+            let currentLevelConfig;
+            let cardValues = [];
+            let cardsChosen = []; 
+            let cardsChosenIds = []; 
+            let cardsMatched = [];
+            let score = 0;
+            let attempts = 0;
+            let lockBoard = false;
+
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            function createBoard(numPairs, numColumns) {
+                gameBoard.innerHTML = ''; 
+                gameBoard.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`;
+                
+                let imagesForLevel = allMinionImageSources.slice(0, numPairs);
+                if (imagesForLevel.length < numPairs) {
+                    console.error("No hay suficientes imágenes únicas para este nivel.");
+                }
+                cardValues = [...imagesForLevel, ...imagesForLevel];
+                shuffle(cardValues);
+
+                for (let i = 0; i < cardValues.length; i++) {
+                    const card = document.createElement('div');
+                    card.classList.add('card');
+                    card.dataset.id = i; 
+                    card.dataset.value = cardValues[i];
+
+                    const cardFace = document.createElement('div');
+                    cardFace.classList.add('card-face');
+                    const img = document.createElement('img');
+                    img.setAttribute('src', cardValues[i]);
+                    img.setAttribute('alt', 'Minion');
+                    img.onerror = function() { 
+                        this.alt = 'Error al cargar Minion';
+                        this.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="30" fill="%233D7DCA">😢</text></svg>';
+                    };
+                    cardFace.appendChild(img);
+
+                    const cardBack = document.createElement('div');
+                    cardBack.classList.add('card-back');
+
+                    card.appendChild(cardFace);
+                    card.appendChild(cardBack);
+
+                    card.addEventListener('click', flipCard);
+                    gameBoard.appendChild(card);
+                }
+                // Mostrar el récord del nivel actual
+                if (levelSelect.options.length > 0) {
+                    displayHighScore(levelSelect.selectedIndex);
+                }
+            }
+            
+            function flipCard() {
+                if (lockBoard || this.classList.contains('flipped') || this.classList.contains('matched')) return;
+                
+                playSound(flipAudio);
+
+                const cardId = this.dataset.id;
+                
+                this.classList.add('flipped');
+                cardsChosen.push(this.dataset.value);
+                cardsChosenIds.push(cardId);
+
+                if (cardsChosen.length === 2) {
+                    lockBoard = true; 
+                    attempts++;
+                    attemptsDisplay.textContent = `Intentos: ${attempts}`;
+                    setTimeout(checkForMatch, 700);
+                }
+            }
+
+            function checkForMatch() {
+                const allCards = gameBoard.children;
+                const optionOneId = cardsChosenIds[0];
+                const optionTwoId = cardsChosenIds[1];
+                const cardOneElement = allCards[optionOneId];
+                const cardTwoElement = allCards[optionTwoId];
+
+                if (cardsChosen[0] === cardsChosen[1] && optionOneId !== optionTwoId) {
+                    score++;
+                    scoreDisplay.textContent = `Puntuación: ${score}`;
+                    cardOneElement.classList.add('matched');
+                    cardTwoElement.classList.add('matched');
+                    cardsMatched.push(cardsChosen[0]);
+                    playSound(matchAudio);
+                } else {
+                    cardOneElement.classList.remove('flipped');
+                    cardTwoElement.classList.remove('flipped');
+                    playSound(noMatchAudio);
+                }
+
+                cardsChosen = [];
+                cardsChosenIds = [];
+                lockBoard = false;
+
+                if (cardsMatched.length === currentLevelConfig.pairs) {
+                    playSound(winLevelAudio);
+                    
+                    const currentLevelIndex = levelSelect.selectedIndex;
+                    const isNewHighScore = saveHighScore(currentLevelIndex, attempts);
+                    let highScoreMessage = "";
+
+                    if (isNewHighScore) {
+                        highScoreMessage = `<br><span class="new-record-highlight">¡NUEVO RÉCORD PARA ESTE NIVEL!</span> 🎉🍌`;
+                        displayHighScore(currentLevelIndex); // Actualiza el display inmediatamente
+                    } else {
+                        const highScores = getHighScores();
+                        const levelKey = `level_${currentLevelIndex}_attempts`;
+                        if (highScores[levelKey]) {
+                            highScoreMessage = `<br>Tu récord actual para este nivel es: ${highScores[levelKey]} intentos.`;
+                        }
+                    }
+
+                    setTimeout(() => {
+                        Swal.fire({
+                            title: '¡BEE DOO BEE DOO!',
+                            html: `¡Increíble! <br> Has completado el nivel <strong>${currentLevelConfig.name}</strong> en <strong>${attempts}</strong> intentos. <br> ¡Eres un verdadero genio Minion! ${highScoreMessage}`,
+                            imageUrl: 'https://media.giphy.com/media/11sBLVxNs7v6WA/giphy.gif',
+                            imageWidth: 200,
+                            imageHeight: 150,
+                            imageAlt: 'Minions celebrando',
+                            confirmButtonText: '¡Jugar de Nuevo!',
+                            confirmButtonColor: '#3D7DCA',
+                            background: '#FFDA00',
+                            customClass: {
+                                title: 'swal-title-minion',
+                                htmlContainer: 'swal-html-minion',
+                                confirmButton: 'swal-button-minion'
+                            },
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                startGame();
+                            }
+                        });
+                    }, 500);
+                }
+            }
+            
+            function startGame() {
+                if (levelSelect.options.length > 0) {
+                    currentLevelConfig = levels[levelSelect.selectedIndex];
+                } else {
+                    currentLevelConfig = levels[0]; // Fallback al primer nivel
+                }
+                score = 0;
+                attempts = 0;
+                cardsMatched = [];
+                cardsChosen = [];
+                cardsChosenIds = [];
+                lockBoard = false;
+                scoreDisplay.textContent = `Puntuación: ${score}`;
+                attemptsDisplay.textContent = `Intentos: ${attempts}`;
+                
+                createBoard(currentLevelConfig.pairs, currentLevelConfig.columns); // createBoard ahora llama a displayHighScore
+            }
+
+            levels.forEach((level, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = level.name;
+                levelSelect.appendChild(option);
+            });
+
+            levelSelect.addEventListener('change', startGame);
+            restartButton.addEventListener('click', startGame);
+
+            startGame(); // Iniciar el juego
+
+        </script>
+
+    </body>
+    </html>
